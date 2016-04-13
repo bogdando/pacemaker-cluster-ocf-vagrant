@@ -11,5 +11,6 @@ else
   wget "${OCF_RA_PATH}"  -O /tmp/"${OCF_RA_PROVIDER}"
 fi
 chmod +x /tmp/"${OCF_RA_PROVIDER}"
+mkdir -p /usr/lib/ocf/resource.d/"${OCF_RA_PROVIDER}"
 cp -f /tmp/"${OCF_RA_PROVIDER}" /usr/lib/ocf/resource.d/"${OCF_RA_PROVIDER}"/
 exit 0

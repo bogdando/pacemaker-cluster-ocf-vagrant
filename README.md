@@ -115,3 +115,7 @@ or just ``lein test``, or even something like
 ```
 bash -xx /vagrant/vagrant_script/lein_test.sh foo_ocf_pcmk
 ```
+
+## Examples
+See the [RabbitMQ OCF RA](https://github.com/bogdando/rabbitmq-cluster-ocf-vagrant)
+example repo, which is based on this one.
