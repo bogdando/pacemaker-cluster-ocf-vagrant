@@ -1,0 +1,4 @@
+*.swp
+*~
+.vagrant
+vagrant-settings.yaml
