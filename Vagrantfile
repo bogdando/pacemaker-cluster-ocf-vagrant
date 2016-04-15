@@ -138,7 +138,7 @@ Vagrant.configure(2) do |config|
   end
 
   # Any conf tasks to be executed for all nodes should be added here as well
-  COMMON_TASKS = [ra_ocf_setup, cib_cleanup]
+  COMMON_TASKS = [ra_ocf_setup, primitive_setup, cib_cleanup]
 
   config.vm.define "n1", primary: true do |config|
     config.vm.host_name = "n1"
@@ -153,7 +153,7 @@ Vagrant.configure(2) do |config|
         docker_exec("n1","#{ssh_setup} >/dev/null 2>&1")
         docker_exec("n1","#{ssh_allow} >/dev/null 2>&1")
       end
-      [corosync_setup, primitive_setup].each { |s| docker_exec("n1","#{s} >/dev/null 2>&1") }
+      docker_exec("n1","#{corosync_setup} >/dev/null 2>&1")
       COMMON_TASKS.each { |s| docker_exec("n1","#{s} >/dev/null 2>&1") }
       # If required, inject a sync point/test here, like waiting for a cluster to become ready
       # docker_exec("n1","#{foo_test_local}") unless USE_JEPSEN == "true"
