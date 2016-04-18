@@ -43,6 +43,7 @@ def docker_exec (name, script)
 end
 
 # Render a pacemaker primitive configuration
+corosync_setup = shell_script("/vagrant/vagrant_script/conf_corosync.sh")
 primitive_setup = shell_script("/vagrant/vagrant_script/conf_primitive.sh")
 cib_cleanup = shell_script("/vagrant/vagrant_script/conf_cib_cleanup.sh")
 ra_ocf_setup = shell_script("/vagrant/vagrant_script/conf_ra_ocf.sh",
@@ -138,11 +139,10 @@ Vagrant.configure(2) do |config|
   end
 
   # Any conf tasks to be executed for all nodes should be added here as well
-  COMMON_TASKS = [ra_ocf_setup, primitive_setup, cib_cleanup]
+  COMMON_TASKS = [corosync_setup, ra_ocf_setup, primitive_setup, cib_cleanup]
 
   config.vm.define "n1", primary: true do |config|
     config.vm.host_name = "n1"
-    corosync_setup = shell_script("/vagrant/vagrant_script/conf_corosync.sh", [], ["#{IP24NET}.2"])
     config.vm.provider :docker do |d, override|
       d.name = "n1"
       d.create_args = [ "--stop-signal=SIGKILL", "--shm-size=500m", "-i", "-t", "--privileged",
@@ -153,7 +153,6 @@ Vagrant.configure(2) do |config|
         docker_exec("n1","#{ssh_setup} >/dev/null 2>&1")
         docker_exec("n1","#{ssh_allow} >/dev/null 2>&1")
       end
-      docker_exec("n1","#{corosync_setup} >/dev/null 2>&1")
       COMMON_TASKS.each { |s| docker_exec("n1","#{s} >/dev/null 2>&1") }
       # If required, inject a sync point/test here, like waiting for a cluster to become ready
       # docker_exec("n1","#{foo_test_local}") unless USE_JEPSEN == "true"
@@ -166,8 +165,6 @@ Vagrant.configure(2) do |config|
     raise if ip_ind > 254
     config.vm.define "n#{index}" do |config|
       config.vm.host_name = "n#{index}"
-      # wait 2 seconds for the first corosync node
-      corosync_setup = shell_script("/vagrant/vagrant_script/conf_corosync.sh", [], ["#{IP24NET}.#{ip_ind}", 2])
       config.vm.provider :docker do |d, override|
         d.name = "n#{index}"
         d.create_args = ["--stop-signal=SIGKILL", "-i", "-t", "--privileged", "--ip=#{IP24NET}.#{ip_ind}",
@@ -178,7 +175,6 @@ Vagrant.configure(2) do |config|
           docker_exec("n#{index}","#{ssh_setup} >/dev/null 2>&1")
           docker_exec("n#{index}","#{ssh_allow} >/dev/null 2>&1")
         end
-        docker_exec("n#{index}","#{corosync_setup}")
         COMMON_TASKS.each { |s| docker_exec("n#{index}","#{s} >/dev/null 2>&1") }
       end
     end
