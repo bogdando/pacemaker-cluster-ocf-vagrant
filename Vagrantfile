@@ -53,17 +53,14 @@ ra_ocf_setup = shell_script("/vagrant/vagrant_script/conf_ra_ocf.sh",
 # Setup lein, jepsen and hosts/ssh access for it
 jepsen_setup = shell_script("/vagrant/vagrant_script/conf_jepsen.sh")
 lein_test = shell_script("/vagrant/vagrant_script/lein_test.sh", [], [JEPSEN_APP])
-ssh_setup = shell_script("/vagrant/vagrant_script/conf_ssh.sh")
+ssh_setup = shell_script("/vagrant/vagrant_script/conf_ssh.sh",[], [SLAVES_COUNT+1])
 entries = "'#{IP24NET}.2 n1'"
-cmd = ["ssh-keyscan -t rsa n1,#{IP24NET}.2 >> ~/.ssh/known_hosts"]
 SLAVES_COUNT.times do |i|
   index = i + 2
   ip_ind = i + 3
   entries += " '#{IP24NET}.#{ip_ind} n#{index}'"
-  cmd << "ssh-keyscan -t rsa n#{index},#{IP24NET}.#{ip_ind} >> ~/.ssh/known_hosts"
 end
 hosts_setup = shell_script("/vagrant/vagrant_script/conf_hosts.sh", [], [entries])
-ssh_allow = shell_script(cmd.join("\n"))
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
@@ -128,7 +125,6 @@ Vagrant.configure(2) do |config|
         docker_exec("n0","#{jepsen_setup} >/dev/null 2>&1")
         docker_exec("n0","#{hosts_setup} >/dev/null 2>&1")
         docker_exec("n0","#{ssh_setup} >/dev/null 2>&1")
-        docker_exec("n0","#{ssh_allow} >/dev/null 2>&1")
         # If required, inject a sync point/test here, like waiting for a cluster to become ready
         # docker_exec("n0","#{foo_test_via_ssh_n1}")
         # Then run all of the jepsen tests for the given app, and it *may* fail
@@ -149,10 +145,7 @@ Vagrant.configure(2) do |config|
         "--ip=#{IP24NET}.2", "--net=vagrant-#{OCF_RA_PROVIDER}", docker_volumes].flatten
     end
     config.trigger.after :up, :option => { :vm => 'n1' } do
-      if USE_JEPSEN == "true"
-        docker_exec("n1","#{ssh_setup} >/dev/null 2>&1")
-        docker_exec("n1","#{ssh_allow} >/dev/null 2>&1")
-      end
+      docker_exec("n1","#{ssh_setup} >/dev/null 2>&1") if USE_JEPSEN == "true"
       COMMON_TASKS.each { |s| docker_exec("n1","#{s} >/dev/null 2>&1") }
       # If required, inject a sync point/test here, like waiting for a cluster to become ready
       # docker_exec("n1","#{foo_test_local}") unless USE_JEPSEN == "true"
@@ -171,10 +164,7 @@ Vagrant.configure(2) do |config|
         "--net=vagrant-#{OCF_RA_PROVIDER}", docker_volumes].flatten
       end
       config.trigger.after :up, :option => { :vm => "n#{index}" } do
-        if USE_JEPSEN == "true"
-          docker_exec("n#{index}","#{ssh_setup} >/dev/null 2>&1")
-          docker_exec("n#{index}","#{ssh_allow} >/dev/null 2>&1")
-        end
+        docker_exec("n#{index}","#{ssh_setup} >/dev/null 2>&1") if USE_JEPSEN == "true"
         COMMON_TASKS.each { |s| docker_exec("n#{index}","#{s} >/dev/null 2>&1") }
       end
     end
