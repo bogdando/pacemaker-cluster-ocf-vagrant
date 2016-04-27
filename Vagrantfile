@@ -50,8 +50,9 @@ ra_ocf_setup = shell_script("/vagrant/vagrant_script/conf_ra_ocf.sh",
   ["UPLOAD_METHOD=#{UPLOAD_METHOD}", "OCF_RA_PATH=#{OCF_RA_PATH}",
    "OCF_RA_PROVIDER=#{OCF_RA_PROVIDER}"])
 
-# Setup lein, jepsen and hosts/ssh access for it
+# Setup docker dropins, lein, jepsen and hosts/ssh access for it
 jepsen_setup = shell_script("/vagrant/vagrant_script/conf_jepsen.sh")
+docker_dropins = shell_script("/vagrant/vagrant_script/conf_docker_dropins.sh")
 lein_test = shell_script("/vagrant/vagrant_script/lein_test.sh", [], [JEPSEN_APP])
 ssh_setup = shell_script("/vagrant/vagrant_script/conf_ssh.sh",[], [SLAVES_COUNT+1])
 entries = "'#{IP24NET}.2 n1'"
@@ -128,6 +129,7 @@ Vagrant.configure(2) do |config|
         # If required, inject a sync point/test here, like waiting for a cluster to become ready
         # docker_exec("n0","#{foo_test_via_ssh_n1}")
         # Then run all of the jepsen tests for the given app, and it *may* fail
+        docker_exec("n0","#{docker_dropins}")
         docker_exec("n0","#{lein_test}")
         # Verify if the cluster was recovered
       end
