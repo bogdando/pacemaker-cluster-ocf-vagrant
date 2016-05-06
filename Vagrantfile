@@ -45,7 +45,6 @@ end
 # Render a pacemaker primitive configuration
 corosync_setup = shell_script("/vagrant/vagrant_script/conf_corosync.sh")
 primitive_setup = shell_script("/vagrant/vagrant_script/conf_primitive.sh")
-cib_cleanup = shell_script("/vagrant/vagrant_script/conf_cib_cleanup.sh")
 ra_ocf_setup = shell_script("/vagrant/vagrant_script/conf_ra_ocf.sh",
   ["UPLOAD_METHOD=#{UPLOAD_METHOD}", "OCF_RA_PATH=#{OCF_RA_PATH}",
    "OCF_RA_PROVIDER=#{OCF_RA_PROVIDER}"])
@@ -137,7 +136,7 @@ Vagrant.configure(2) do |config|
   end
 
   # Any conf tasks to be executed for all nodes should be added here as well
-  COMMON_TASKS = [corosync_setup, ra_ocf_setup, primitive_setup, cib_cleanup]
+  COMMON_TASKS = [corosync_setup, ra_ocf_setup, primitive_setup]
 
   config.vm.define "n1", primary: true do |config|
     config.vm.host_name = "n1"
