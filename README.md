@@ -48,6 +48,9 @@ the command ``vagrant ssh`` not working. Instead use the
   ``packer-atlas-example0`` or ``vagrant-libvirt`` or the like. Otherwise nodes may
   become isolated from the host system.
 
+* If the terminal session looks "broken" after the ``vagrant up/down``, issue a
+  ``reset`` command as well.
+
 ## Troubleshooting
 
 You may want to use the command like:
