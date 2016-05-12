@@ -6,7 +6,7 @@ hostname | grep -q "^n[0-9]\+"
 cd /jepsen
 # Use either upstream jepsen or any required fork, e.g.:
 # if ! git clone https://github.com/aphyr/jepsen
-if ! git clone -b rabbit_pcmk https://github.com/bogdando/jepsen
+if ! git clone -b dev https://github.com/bogdando/jepsen
 then
   cd ./jepsen
   git remote update
