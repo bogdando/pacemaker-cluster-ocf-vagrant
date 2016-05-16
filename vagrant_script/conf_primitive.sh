@@ -28,6 +28,7 @@ do
   crm configure<<EOF
   property stonith-enabled=false
   property no-quorum-policy=stop
+  property cluster-recheck-interval=30s
   commit
 EOF
 # Example:
