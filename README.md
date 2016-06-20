@@ -123,6 +123,7 @@ docker exec -it jepsen lein test :only jepsen.core-test/ssh-test
 or just ``lein test``, or even something like
 ```
 bash -xx /vagrant/vagrant_script/lein_test.sh foo_ocf_pcmk
+PURGE=true ./vagrant/vagrant_script/lein_test.sh noop ssh-test
 ```
 
 ## Examples
