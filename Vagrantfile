@@ -30,9 +30,14 @@ if USE_JEPSEN == "true"
 else
   SLAVES_COUNT = (ENV['SLAVES_COUNT'] || cfg['slaves_count']).to_i
 end
+if QUIET == "true"
+  REDIRECT=">/dev/null 2>&1"
+else
+  REDIRECT=">/dev/null"
+end
 
-def shell_script(filename, env=[], args=[])
-  shell_script_crafted = "/bin/bash -c \"#{env.join ' '} #{filename} #{args.join ' '} 2>/dev/null\""
+def shell_script(filename, env=[], args=[], redirect=REDIRECT)
+  shell_script_crafted = "/bin/bash -c \"#{env.join ' '} #{filename} #{args.join ' '} #{redirect}\""
   @logger.info("Crafted shell-script: #{shell_script_crafted})")
   shell_script_crafted
 end
@@ -93,6 +98,8 @@ Vagrant.configure(2) do |config|
     system <<-SCRIPT
     docker network rm "vagrant-#{OCF_RA_PROVIDER}" >/dev/null 2>&1
     SCRIPT
+    # fix terminal bugs
+    system "reset"
   end
 
   config.vm.provider :docker do |d, override|
@@ -127,13 +134,13 @@ Vagrant.configure(2) do |config|
           "--ip=#{IP24NET}.254", "--net=vagrant-#{OCF_RA_PROVIDER}", docker_volumes].flatten
       end
       config.trigger.after :up, :option => { :vm => 'n0' } do
-        docker_exec("n0","#{jepsen_setup} >/dev/null 2>&1")
-        docker_exec("n0","#{hosts_setup} >/dev/null 2>&1")
+        docker_exec("n0","#{jepsen_setup}")
+        docker_exec("n0","#{hosts_setup}")
+        docker_exec("n0","#{ssh_setup}")
         # If required, inject a sync point/test here, like waiting for a cluster to become ready
         # docker_exec("n0","#{foo_test_via_ssh_n1}")
         # Then run all of the jepsen tests for the given app, and it *may* fail
         docker_exec("n0","#{docker_dropins}")
-        docker_exec("n0","#{ssh_setup} >/dev/null 2>&1")
         docker_exec("n0","#{lein_test}")
         # Verify if the cluster was recovered
       end
@@ -143,12 +150,6 @@ Vagrant.configure(2) do |config|
   # Any conf tasks to be executed for all nodes should be added here as well
   COMMON_TASKS = [root_login, ssh_setup, corosync_setup, pcmk_dropins, ra_ocf_setup, primitive_setup]
 
-  if QUIET == "true" then
-    redirect=">/dev/null 2>&1"
-  else
-    redirect=""
-  end
-
   config.vm.define "n1", primary: true do |config|
     config.vm.host_name = "n1"
     config.vm.provider :docker do |d, override|
@@ -157,7 +158,7 @@ Vagrant.configure(2) do |config|
         "--ip=#{IP24NET}.2", "--net=vagrant-#{OCF_RA_PROVIDER}", docker_volumes].flatten
     end
     config.trigger.after :up, :option => { :vm => 'n1' } do
-      COMMON_TASKS.each { |s| docker_exec("n1","#{s} #{redirect}") }
+      COMMON_TASKS.each { |s| docker_exec("n1","#{s}") }
       # If required, inject a sync point/test here, like waiting for a cluster to become ready
       # docker_exec("n1","#{foo_test_local}") unless USE_JEPSEN == "true"
     end
@@ -175,7 +176,7 @@ Vagrant.configure(2) do |config|
         "--net=vagrant-#{OCF_RA_PROVIDER}", docker_volumes].flatten
       end
       config.trigger.after :up, :option => { :vm => "n#{index}" } do
-        COMMON_TASKS.each { |s| docker_exec("n#{index}","#{s} #{redirect}") }
+        COMMON_TASKS.each { |s| docker_exec("n#{index}","#{s}") }
       end
     end
   end
