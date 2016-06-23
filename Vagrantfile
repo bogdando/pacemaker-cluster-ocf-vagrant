@@ -130,7 +130,7 @@ Vagrant.configure(2) do |config|
       config.vm.host_name = "n0"
       config.vm.provider :docker do |d, override|
         d.name = "n0"
-        d.create_args = [ "--stop-signal=SIGKILL", "--shm-size=500m", "-i", "-t", "--privileged",
+        d.create_args = [ "--stop-signal=SIGKILL", "-i", "-t", "--privileged",
           "--ip=#{IP24NET}.254", "--net=vagrant-#{OCF_RA_PROVIDER}", docker_volumes].flatten
       end
       config.trigger.after :up, :option => { :vm => 'n0' } do
@@ -172,8 +172,8 @@ Vagrant.configure(2) do |config|
       config.vm.host_name = "n#{index}"
       config.vm.provider :docker do |d, override|
         d.name = "n#{index}"
-        d.create_args = ["--stop-signal=SIGKILL", "-i", "-t", "--privileged", "--ip=#{IP24NET}.#{ip_ind}",
-        "--net=vagrant-#{OCF_RA_PROVIDER}", docker_volumes].flatten
+        d.create_args = ["--stop-signal=SIGKILL", "--shm-size=500m", "-i", "-t", "--privileged",
+        "--ip=#{IP24NET}.#{ip_ind}", "--net=vagrant-#{OCF_RA_PROVIDER}", docker_volumes].flatten
       end
       config.trigger.after :up, :option => { :vm => "n#{index}" } do
         COMMON_TASKS.each { |s| docker_exec("n#{index}","#{s}") }
