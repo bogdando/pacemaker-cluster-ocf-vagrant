@@ -1,5 +1,5 @@
 #!/bin/sh
-[ "${OCF_RA_PROVIDER}" = "none" ] && exit 0 
+[ "${OCF_RA_PROVIDER}" = "none" ] && exit 0
 if [ "${UPLOAD_METHOD}" = "copy" ] ; then
   [ "${OCF_RA_PATH}" ] || exit 1
   echo "Get the OCF RA from ${OCF_RA_PATH}"

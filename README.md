@@ -1,24 +1,31 @@
 # pacemaker-cluster-ocf-vagrant
 
-[Packer Build Scripts](https://github.com/bogdando/packer-atlas-example)
-| [Docker Image (Ubuntu 15.10)](https://hub.docker.com/r/bogdando/pacemaker-cluster-ocf-wily/)
-| [Docker Image (Ubuntu 16.04)](https://hub.docker.com/r/bogdando/pacemaker-cluster-ocf-xenial/)
+Docker images (debian:jessy based)
+[Pacemaker](https://hub.docker.com/r/bogdando/pacemaker/)
+| [Corosync](https://hub.docker.com/r/bogdando/corosync/)
+| [Pcs/Crm tools](https://hub.docker.com/r/bogdando/corosync/pcscrm)
 
-A Vagrantfile to bootstrap a Pacemaker cluster and install a given
-[OCF RA](http://www.linux-ha.org/wiki/OCF_Resource_Agents) resource under test.
+A Vagrantfile to bootstrap a Corosync/Pacemaker cluster and install a given
+[OCF RA](http://www.linux-ha.org/wiki/OCF_Resource_Agents) resource under test,
+hence a `runner`. A runner as well contains some required tools like the
+`pcs` or `curl` or `iptables`. A Corosync/Pacemaker run as a foreground
+processes in a lightweight containers, hence `apps`.
 
 ## Vagrantfile
 
 Supports only docker (experimental) provider.
-Required vagrant plugins: vagrant-triggers.
-TODO(bogdando): add support for debian/centos/rhel images as well.
+Required vagrant plugins: vagrant-triggers. Requires a Docker >=v1.12.
 
-* Spins up two VM nodes ``[n1, n2]`` with predefined IP addressess
-  ``10.10.10.2-3/24`` by default. Use the ``SLAVES_COUNT`` env var, if you need
-  more nodes to form a cluster. Note, that the ``vagrant destroy`` shall accept
-  the same number as well!
-* Creates a corosync cluster with disabled quorum and STONITH.
-* Launches the given OCF RA under test.
+* Spins up a two containers for a Pacemaker apps made as a cluster and
+  (linked)[https://github.com/docker/docker/blob/master/docs/reference/run.md#pid-settings---pid]
+  via IPC/pid/net spaces to a two more Corosync container apps as well. On top of the Pacemaker apps,
+  links a `runner` wrapper containers named n1, n2. The runners will
+  configure a Pacemaker OCF RA resource under test, like a DB/MQ clusters,
+  and will be accessed via SSH as a generic VM hosts by a Jepsen, if enabled.
+
+Use the ``IP24NET`` and ``SLAVES_COUNT`` or a runner image/mounts related env
+vars, if you need more instances or custom IPs in the Corosync cluster, or
+custom image/mounts for the runners.
 
 Note, that constants from the ``Vagrantfile`` may be as well configred as
 ``vagrant-settings.yaml_defaults`` or ``vagrant-settings.yaml`` and will be
@@ -30,10 +37,6 @@ the command ``vagrant ssh`` not working. Instead use the
 
 ## Known issues
 
-* A Pacemaker may behave strange in VM-like containers: ``crm_node -l`` may start
-  reporting empty nodes lists or pacemakerd may die for a some strange reason.
-  That was seen when using custom docker run commands, which are not ``/sbin/init``.
-
 * For the docker provider, a networking is [not implemented](https://github.com/mitchellh/vagrant/issues/6667)
   and there is no [docker-exec privisioner](https://github.com/mitchellh/vagrant/issues/4179)
   to replace the ssh-based one. So I put ugly workarounds all around to make
@@ -43,10 +46,6 @@ the command ``vagrant ssh`` not working. Instead use the
   Or use ``docker rm -f -v`` to force manual removal, but keep in mind that
   that will likely make your docker images directory eating more and more free
   space.
-
-* Make sure there is no conflicting host networks exist, like
-  ``packer-atlas-example0`` or ``vagrant-libvirt`` or the like. Otherwise nodes may
-  become isolated from the host system.
 
 * If the terminal session looks "broken" after the ``vagrant up/down``, issue a
   ``reset`` command as well.
@@ -96,18 +95,19 @@ To proceed with jepsen tests, firstly create an ssh key with:
 ```
 cat /dev/random | ssh-keygen -b 1024 -t rsa -f /tmp/sshkey -q -N ""
 ```
-Secondly, update `./conf` files as required for a test case and define the env
-settings variables in the `./vagrant-settings.yaml_defaults` file. For example,
-let's use `jepsen_app: rabbit_ocf_pcmk`, `rabbit_ver: 3.5.7`.
+Secondly, define the env settings variables in the
+`./vagrant-settings.yaml(_defaults)` files. For example, let's use
+`jepsen_app: noop`, `jepsen_testcase: ssh-test` and
 
 Then set `use_jepsen: "true"` in the env settings  and run ``vagrant up``.
-It launches a control node n0 and five nodes named n1, n2, n3, n4, n5. Jepsen logs
-and results may be found in the shared volume named `jepsen`, in the `/logs`.
+It launches a five runners named n{1,5} and an additional control node runner
+container n0. Jepsen logs and results may be found in the shared volume named
+`jepsen`, in the `/logs`.
 
 NOTE: The `jepsen` volume contains a shared state, like the lein docker image and
-the jepsen repo/jarfile/results, for consequent vagrant up/destroy runs. If
-something went wrong, you can safely delete it. Then it will be recreated from the
-scratch as well.
+the jepsen jarfile/test results. It will be mounted to the n0 runner and reused
+across a consequent vagrant up/destroy runs. If something went wrong, you can safely
+delete it. Then it will be recreated from the scratch as well.
 
 To collect logs at the host OS under the `/tmp/results.tar.gz`, use the command like:
 ```
@@ -125,7 +125,3 @@ or just ``lein test``, or even something like
 bash -xx /vagrant/vagrant_script/lein_test.sh foo_ocf_pcmk
 PURGE=true ./vagrant/vagrant_script/lein_test.sh noop ssh-test
 ```
-
-## Examples
-See the [RabbitMQ OCF RA](https://github.com/bogdando/rabbitmq-cluster-ocf-vagrant)
-example repo, which is based on this one.

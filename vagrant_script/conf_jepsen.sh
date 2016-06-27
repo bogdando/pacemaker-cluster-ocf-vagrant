@@ -1,5 +1,5 @@
 #!/bin/sh
-# Clone/fetch jepsen fork and branch $1
+# Clone/fetch jepsen fork and branch $1, or use from a mount
 mkdir -p /jepsen
 cd /jepsen
 branch="${1:-dev}"
@@ -8,8 +8,7 @@ then
   cd ./jepsen
   git remote update
   git pull --ff-only
-  cd -
 fi
-mkdir -p logs
+mkdir -p /jepsen/logs
 sync
 exit 0
