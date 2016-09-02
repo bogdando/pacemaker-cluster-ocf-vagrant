@@ -36,7 +36,7 @@ end
 if QUIET == "true"
   REDIRECT=">/dev/null 2>&1"
 else
-  REDIRECT=">/dev/null"
+  REDIRECT="2>&1"
 end
 NET="vagrant-#{OCF_RA_PROVIDER}"
 
